@@ -10,4 +10,5 @@ Repositori praktikum mata kuliah Desain dan Pemrograman Web.
 - [Jobsheet 02](./jobsheet-02/) - Styling Dasar dengan CSS3 (Dark Mode)
 - [Jobsheet 03](./jobsheet-03/) - Responsive Web Design (Dark Mode & Glassmorphism)
 - [Jobsheet 04](./jobsheet-04/) - UI/UX Design & Wireframe
-
+- [Jobsheet 05](./jobsheet-05/) - Manipulasi DOM & Event JavaScript
+- [Jobsheet 06](./jobsheet-06/) - Komunikasi Asinkron (Fetch API & JSON)
