@@ -1,33 +1,46 @@
 <?php
-$page_title = 'Dashboard';
-include __DIR__ . '/includes/header.php';
-?>
-        <section class="max-w-2xl pb-16 flex flex-col items-center">
-            <p class="text-lg text-orange-500 text-center">Halo!</p>
-            <h2 class="text-5xl py-2 font-bold text-center">Selamat Datang di Sistem <span class="text-emerald-300">Perpustakaan  Mini</span></h2>
-            <p class="text-xl text-center w-[60%] font-medium text-neutral-200">Aplikasi sederhana untuk mengelola data buku dan anggota perpustakaan.</p>
-        </section>
+declare(strict_types=1);
 
-        <section class="flex flex-col center items-center w-full">
-            <div class="glow-edge-2 rounded-3xl p-6 w-full max-w-7xl flex flex-col
-                        border border-white/40 backdrop-blur-sm bg-white/[0.05] shadow-lg">
-                <div class="w-full flex items-center justify-center mb-8">
-                    <h2 class="text-3xl font-bold">Ringkasan</h2>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-center ">    
-                    <article class="border border-neutral-700 rounded-3xl p-4 bg-zinc-900/60 hover:border-emerald-500 transition duration-200 font-bold">
-                        <h3>Total Buku</h3>
-                        <p>12</p>
-                    </article>
-                    <article class="border border-neutral-700 rounded-3xl p-4 bg-zinc-900/60 hover:border-emerald-500 transition duration-200 font-bold">
-                        <h3>Total Anggota</h3>
-                        <p>8</p>
-                    </article>
-                    <article class="border border-neutral-700 rounded-3xl p-4 bg-zinc-900/60 hover:border-emerald-500 transition duration-200 font-bold">
-                        <h3>Sedang Dipinjam</h3>
-                        <p>3</p>
-                    </article>
-                </div>
-            </div>
-        </section>
-<?php include __DIR__ . '/includes/footer.php'; ?>
+require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/database.php';
+
+$pdo = db();
+$stats = $pdo->query(
+    'SELECT COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE is_active) AS active,
+            COUNT(*) FILTER (WHERE NOT is_active) AS inactive,
+            COALESCE(SUM(quota), 0) AS quota,
+            COALESCE(SUM(quota_usage), 0) AS usage
+     FROM api_keys'
+)->fetch();
+$recentKeys = $pdo->query('SELECT id, name, is_active, quota, created_at FROM api_keys ORDER BY created_at DESC, id DESC LIMIT 5')->fetchAll();
+
+$pageTitle = 'Dashboard';
+$activeNav = 'dashboard';
+require __DIR__ . '/includes/header.php';
+?>
+<section class="page-heading">
+    <div><p class="eyebrow">OVERVIEW</p><h1>Dashboard</h1><p class="muted">Ringkasan pengelolaan API key kamu.</p></div>
+    <a class="button button-primary" href="<?= e(app_url('apikey/tambah.php')) ?>"><span aria-hidden="true">＋</span> Buat API key</a>
+</section>
+
+<section class="stat-grid" aria-label="Ringkasan API key">
+    <article class="stat-card"><span class="stat-icon">⌘</span><span class="stat-label">Total API keys</span><strong><?= e($stats['total']) ?></strong><span class="stat-note">Semua key terdaftar</span></article>
+    <article class="stat-card"><span class="stat-icon status-dot-on">●</span><span class="stat-label">Active</span><strong><?= e($stats['active']) ?></strong><span class="stat-note">Siap digunakan</span></article>
+    <article class="stat-card"><span class="stat-icon status-dot-off">●</span><span class="stat-label">Inactive</span><strong><?= e($stats['inactive']) ?></strong><span class="stat-note">Akses dinonaktifkan</span></article>
+    <article class="stat-card"><span class="stat-icon">◷</span><span class="stat-label">Total quota</span><strong><?= number_format((int) $stats['quota']) ?></strong><span class="stat-note">Penggunaan demo: <?= number_format((int) $stats['usage']) ?></span></article>
+</section>
+
+<section class="panel">
+    <div class="panel-heading"><div><p class="eyebrow">TERBARU</p><h2>API key terbaru</h2></div><a class="text-link" href="<?= e(app_url('apikey/list.php')) ?>">Lihat semua <span aria-hidden="true">→</span></a></div>
+    <?php if (!$recentKeys): ?>
+        <div class="empty-state"><p>Belum ada API key.</p><a class="text-link" href="<?= e(app_url('apikey/tambah.php')) ?>">Buat API key pertama kamu →</a></div>
+    <?php else: ?>
+        <div class="table-wrap"><table class="data-table"><thead><tr><th>Nama</th><th>Dibuat</th><th>Quota</th><th>Status</th></tr></thead><tbody>
+        <?php foreach ($recentKeys as $key): ?>
+            <tr><td class="strong-cell"><?= e($key['name']) ?></td><td><?= e(date('d M Y', strtotime($key['created_at']))) ?></td><td><?= number_format((int) $key['quota']) ?></td><td><span class="badge <?= $key['is_active'] ? 'badge-active' : 'badge-inactive' ?>"><?= $key['is_active'] ? 'Active' : 'Inactive' ?></span></td></tr>
+        <?php endforeach; ?>
+        </tbody></table></div>
+    <?php endif; ?>
+</section>
+<?php require __DIR__ . '/includes/footer.php'; ?>
